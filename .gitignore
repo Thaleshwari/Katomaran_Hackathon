@@ -1,0 +1,41 @@
+# Root GitIgnore for Linkyfy (Fullstack)
+
+# Node.js (Frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+
+# Java/Maven (Backend)
+url-shortener-sb/target/
+url-shortener-sb/.mvn/wrapper/maven-wrapper.jar
+url-shortener-sb/HELP.md
+!url-shortener-sb/src/main/**/target/
+!url-shortener-sb/src/test/**/target/
+
+# IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+
+# Others
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+reg.json
+test_*.py
+__pycache__/
