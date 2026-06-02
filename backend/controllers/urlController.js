@@ -117,7 +117,7 @@ const getQrCode = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const baseUrl = import.meta.env.VITE_API_URL;
+    const baseUrl = process.env.BASE_URL || "http://localhost:8080";
     const fullShortUrl = `${baseUrl}/s/${urlMapping.shortUrl}`;
 
     const qrDataUrl = await QRCode.toDataURL(fullShortUrl, {
