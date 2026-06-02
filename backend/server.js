@@ -14,18 +14,24 @@ const redirectRoutes = require('./routes/redirectRoutes');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+app.get("/", (req, res) => {
+  res.send("Backend Running");
+});
+
+
 // CORS configuration matching your frontend ports
 const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174'
+    'https://https://katomaran-hackathon.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Authorization', 'Content-Type', 'Accept'],
   credentials: true,
 };
+
+
 
 app.use(cors(corsOptions));
 app.use(express.json());
