@@ -5,6 +5,7 @@ import { ThemeProvider } from './ThemeContext';
 import { LoginPage, RegisterPage } from './AuthPages';
 import { Dashboard } from './Dashboard';
 import { UrlAnalytics } from './UrlAnalytics';
+import { PublicStats } from './PublicStats';
 import './index.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -30,6 +31,7 @@ function App() {
           <Routes>
             <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/stats/:shortUrl" element={<PublicStats />} />
             <Route
               path="/"
               element={

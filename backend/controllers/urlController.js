@@ -26,11 +26,11 @@ const generateShortUrl = () => {
 };
 
 /**
- * Create a new shortened URL
+ * Create a new shortened URL with optional custom alias and expiry date
  */
 const createShortUrl = async (req, res) => {
   try {
-    const { OriginalUrl } = req.body; // Frontend sends OriginalUrl with uppercase O
+    const { OriginalUrl, customAlias, expiryDate } = req.body;
 
     if (!OriginalUrl) {
       return res.status(400).json({ message: 'OriginalUrl is required' });
@@ -38,11 +38,43 @@ const createShortUrl = async (req, res) => {
 
     const shortUrl = generateShortUrl();
 
+    // Check customAlias
+    let cleanedAlias = undefined;
+    if (customAlias && customAlias.trim() !== '') {
+      cleanedAlias = customAlias.trim();
+      // Validate format
+      if (!/^[a-zA-Z0-9_-]+$/.test(cleanedAlias)) {
+        return res.status(400).json({ message: 'Custom alias must be alphanumeric, dashes, or underscores only' });
+      }
+      
+      // Check if alias is already used
+      const existing = await UrlMapping.findOne({
+        $or: [
+          { shortUrl: cleanedAlias },
+          { customAlias: cleanedAlias }
+        ]
+      });
+      if (existing) {
+        return res.status(400).json({ message: 'Custom alias is already in use' });
+      }
+    }
+
+    // Check expiryDate
+    let parsedExpiry = undefined;
+    if (expiryDate) {
+      parsedExpiry = new Date(expiryDate);
+      if (isNaN(parsedExpiry.getTime())) {
+        return res.status(400).json({ message: 'Invalid expiry date' });
+      }
+    }
+
     // Create UrlMapping in MongoDB
     const newMapping = await UrlMapping.create({
       originalUrl: OriginalUrl,
       shortUrl: shortUrl,
-      user: req.user._id, // Reference to User ObjectId
+      customAlias: cleanedAlias,
+      expiryDate: parsedExpiry,
+      user: req.user._id,
       createdDate: new Date(),
       clickCount: 0,
     });
@@ -52,6 +84,8 @@ const createShortUrl = async (req, res) => {
       id: newMapping._id.toString(),
       originalUrl: newMapping.originalUrl,
       shortUrl: newMapping.shortUrl,
+      customAlias: newMapping.customAlias,
+      expiryDate: newMapping.expiryDate,
       clickCount: newMapping.clickCount,
       createdDate: newMapping.createdDate,
       username: req.user.username,
@@ -67,13 +101,14 @@ const createShortUrl = async (req, res) => {
  */
 const getUserUrls = async (req, res) => {
   try {
-    // Find all mapping documents belonging to this user
     const urls = await UrlMapping.find({ user: req.user._id }).sort({ createdDate: -1 });
 
     const response = urls.map(url => ({
       id: url._id.toString(),
       originalUrl: url.originalUrl,
       shortUrl: url.shortUrl,
+      customAlias: url.customAlias,
+      expiryDate: url.expiryDate,
       clickCount: url.clickCount,
       createdDate: url.createdDate,
       username: req.user.username,
@@ -93,7 +128,6 @@ const deleteUrl = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find mapping by ID
     const urlMapping = await UrlMapping.findById(id);
     if (!urlMapping) {
       return res.status(404).json({ message: 'URL not found' });
@@ -130,7 +164,7 @@ const getQrCode = async (req, res) => {
     }
 
     const baseUrl = getBaseUrl(req);
-    const fullShortUrl = `${baseUrl}/s/${urlMapping.shortUrl}`;
+    const fullShortUrl = `${baseUrl}/s/${urlMapping.customAlias || urlMapping.shortUrl}`;
 
     const qrDataUrl = await QRCode.toDataURL(fullShortUrl, {
       width: 300,
@@ -149,8 +183,163 @@ const getQrCode = async (req, res) => {
 };
 
 /**
- * Get analytics for a shortened URL by its ID
- * Returns per-day click counts for the last 30 days + quick stats
+ * Update the destination URL, expiry date, or custom alias of a mapping
+ */
+const updateUrl = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { originalUrl, expiryDate, customAlias } = req.body;
+
+    const urlMapping = await UrlMapping.findById(id);
+    if (!urlMapping) {
+      return res.status(404).json({ message: 'URL not found' });
+    }
+
+    // Verify ownership
+    if (String(urlMapping.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    if (originalUrl) {
+      urlMapping.originalUrl = originalUrl;
+    }
+
+    if (expiryDate !== undefined) {
+      urlMapping.expiryDate = expiryDate ? new Date(expiryDate) : undefined;
+    }
+
+    if (customAlias !== undefined) {
+      const cleanedAlias = customAlias && customAlias.trim() !== '' ? customAlias.trim() : undefined;
+      if (cleanedAlias) {
+        if (!/^[a-zA-Z0-9_-]+$/.test(cleanedAlias)) {
+          return res.status(400).json({ message: 'Custom alias must be alphanumeric, dashes, or underscores only' });
+        }
+        
+        // Ensure uniqueness
+        const existing = await UrlMapping.findOne({
+          _id: { $ne: urlMapping._id },
+          $or: [
+            { shortUrl: cleanedAlias },
+            { customAlias: cleanedAlias }
+          ]
+        });
+        if (existing) {
+          return res.status(400).json({ message: 'Custom alias is already in use' });
+        }
+      }
+      urlMapping.customAlias = cleanedAlias;
+    }
+
+    await urlMapping.save();
+
+    return res.status(200).json({
+      id: urlMapping._id.toString(),
+      originalUrl: urlMapping.originalUrl,
+      shortUrl: urlMapping.shortUrl,
+      customAlias: urlMapping.customAlias,
+      expiryDate: urlMapping.expiryDate,
+      clickCount: urlMapping.clickCount,
+      createdDate: urlMapping.createdDate,
+      username: req.user.username,
+    });
+  } catch (error) {
+    console.error('Update URL error:', error);
+    return res.status(500).json({ message: 'Internal server error while updating URL' });
+  }
+};
+
+/**
+ * Bulk create shortened URLs (supports custom alias and expiry date)
+ */
+const bulkShortenUrls = async (req, res) => {
+  try {
+    const { urls } = req.body; // Expects array of objects: [{ originalUrl, customAlias, expiryDate }]
+
+    if (!urls || !Array.isArray(urls)) {
+      return res.status(400).json({ message: 'An array of urls is required' });
+    }
+
+    if (urls.length > 50) {
+      return res.status(400).json({ message: 'Maximum 50 URLs can be processed at once' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (let i = 0; i < urls.length; i++) {
+      const { originalUrl, customAlias, expiryDate } = urls[i];
+
+      if (!originalUrl) {
+        errors.push({ index: i, message: 'Original URL is required' });
+        continue;
+      }
+
+      let cleanedAlias = undefined;
+      if (customAlias && customAlias.trim() !== '') {
+        cleanedAlias = customAlias.trim();
+        if (!/^[a-zA-Z0-9_-]+$/.test(cleanedAlias)) {
+          errors.push({ index: i, message: `Invalid custom alias format: ${cleanedAlias}` });
+          continue;
+        }
+
+        // Check if alias is already used
+        const existing = await UrlMapping.findOne({
+          $or: [
+            { shortUrl: cleanedAlias },
+            { customAlias: cleanedAlias }
+          ]
+        });
+        if (existing) {
+          errors.push({ index: i, message: `Custom alias already in use: ${cleanedAlias}` });
+          continue;
+        }
+      }
+
+      let parsedExpiry = undefined;
+      if (expiryDate) {
+        parsedExpiry = new Date(expiryDate);
+        if (isNaN(parsedExpiry.getTime())) {
+          errors.push({ index: i, message: `Invalid expiry date: ${expiryDate}` });
+          continue;
+        }
+      }
+
+      const shortUrl = generateShortUrl();
+
+      try {
+        const newMapping = await UrlMapping.create({
+          originalUrl,
+          shortUrl,
+          customAlias: cleanedAlias,
+          expiryDate: parsedExpiry,
+          user: req.user._id,
+          createdDate: new Date(),
+          clickCount: 0,
+        });
+
+        results.push({
+          id: newMapping._id.toString(),
+          originalUrl: newMapping.originalUrl,
+          shortUrl: newMapping.shortUrl,
+          customAlias: newMapping.customAlias,
+          expiryDate: newMapping.expiryDate,
+          clickCount: newMapping.clickCount,
+          createdDate: newMapping.createdDate,
+        });
+      } catch (err) {
+        errors.push({ index: i, message: err.message });
+      }
+    }
+
+    return res.status(200).json({ results, errors });
+  } catch (error) {
+    console.error('Bulk shorten error:', error);
+    return res.status(500).json({ message: 'Internal server error during bulk shortening' });
+  }
+};
+
+/**
+ * Get analytics for a shortened URL by its ID (includes geolocation, device, browser, referrer stats)
  */
 const getAnalytics = async (req, res) => {
   try {
@@ -216,10 +405,37 @@ const getAnalytics = async (req, res) => {
       timeline.push({ date: key, clicks: clickMap[key] || 0 });
     }
 
-    // Quick stats
-    const [todayCount, weekCount] = await Promise.all([
+    // Quick stats and recent visits
+    const [todayCount, weekCount, recentClicks] = await Promise.all([
       ClickEvent.countDocuments({ urlMapping: urlMapping._id, clickDate: { $gte: todayStart } }),
       ClickEvent.countDocuments({ urlMapping: urlMapping._id, clickDate: { $gte: weekStart } }),
+      ClickEvent.find({ urlMapping: urlMapping._id }).sort({ clickDate: -1 }).limit(5),
+    ]);
+
+    const lastVisited = recentClicks.length > 0 ? recentClicks[0].clickDate : null;
+
+    // Advanced analytics aggregations — $ifNull handles old click events without these fields
+    const [deviceStats, browserStats, countryStats, referrerStats] = await Promise.all([
+      ClickEvent.aggregate([
+        { $match: { urlMapping: urlMapping._id } },
+        { $group: { _id: { $ifNull: ['$device', 'Desktop'] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      ClickEvent.aggregate([
+        { $match: { urlMapping: urlMapping._id } },
+        { $group: { _id: { $ifNull: ['$browser', 'Unknown'] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      ClickEvent.aggregate([
+        { $match: { urlMapping: urlMapping._id } },
+        { $group: { _id: { $ifNull: ['$country', 'Unknown'] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      ClickEvent.aggregate([
+        { $match: { urlMapping: urlMapping._id } },
+        { $group: { _id: { $ifNull: ['$referrer', 'Direct'] }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ])
     ]);
 
     return res.status(200).json({
@@ -227,6 +443,8 @@ const getAnalytics = async (req, res) => {
         id: urlMapping._id.toString(),
         originalUrl: urlMapping.originalUrl,
         shortUrl: urlMapping.shortUrl,
+        customAlias: urlMapping.customAlias,
+        expiryDate: urlMapping.expiryDate,
         createdDate: urlMapping.createdDate,
         clickCount: urlMapping.clickCount,
       },
@@ -234,7 +452,19 @@ const getAnalytics = async (req, res) => {
         today: todayCount,
         lastSevenDays: weekCount,
         allTime: urlMapping.clickCount,
+        lastVisited,
+        devices: deviceStats.map(d => ({ name: d._id || 'Desktop', count: d.count })),
+        browsers: browserStats.map(b => ({ name: b._id || 'Unknown', count: b.count })),
+        countries: countryStats.map(c => ({ name: c._id || 'Unknown', count: c.count })),
+        referrers: referrerStats.map(r => ({ name: r._id || 'Direct', count: r.count })),
       },
+      recentVisits: recentClicks.map(c => ({
+        id: c._id.toString(),
+        clickDate: c.clickDate,
+        country: c.country,
+        device: c.device,
+        browser: c.browser,
+      })),
       timeline,
     });
   } catch (error) {
@@ -243,10 +473,88 @@ const getAnalytics = async (req, res) => {
   }
 };
 
+/**
+ * Retrieve public analytics for a shortened URL without authentication
+ */
+const getPublicStats = async (req, res) => {
+  try {
+    const { shortUrl } = req.params;
+
+    // Find the URL mapping by shortUrl or customAlias
+    const urlMapping = await UrlMapping.findOne({
+      $or: [
+        { shortUrl },
+        { customAlias: shortUrl }
+      ]
+    });
+
+    if (!urlMapping) {
+      return res.status(404).json({ message: 'URL not found' });
+    }
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 29);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const dailyClicks = await ClickEvent.aggregate([
+      {
+        $match: {
+          urlMapping: urlMapping._id,
+          clickDate: { $gte: thirtyDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year:  { $year:  '$clickDate' },
+            month: { $month: '$clickDate' },
+            day:   { $dayOfMonth: '$clickDate' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+    ]);
+
+    const clickMap = {};
+    dailyClicks.forEach(({ _id, count }) => {
+      const key = `${_id.year}-${String(_id.month).padStart(2, '0')}-${String(_id.day).padStart(2, '0')}`;
+      clickMap[key] = count;
+    });
+
+    const timeline = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const key = d.toISOString().slice(0, 10);
+      timeline.push({ date: key, clicks: clickMap[key] || 0 });
+    }
+
+    return res.status(200).json({
+      url: {
+        originalUrl: urlMapping.originalUrl,
+        shortUrl: urlMapping.shortUrl,
+        customAlias: urlMapping.customAlias,
+        createdDate: urlMapping.createdDate,
+        clickCount: urlMapping.clickCount,
+      },
+      timeline,
+    });
+  } catch (error) {
+    console.error('Public stats error:', error);
+    return res.status(500).json({ message: 'Failed to load public stats' });
+  }
+};
+
 module.exports = {
   createShortUrl,
   getUserUrls,
   deleteUrl,
   getQrCode,
+  updateUrl,
+  bulkShortenUrls,
   getAnalytics,
+  getPublicStats,
 };

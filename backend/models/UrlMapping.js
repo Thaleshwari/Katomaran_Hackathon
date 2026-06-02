@@ -23,6 +23,14 @@ const UrlMappingSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  customAlias: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  expiryDate: {
+    type: Date,
+  },
 });
 
 // Configure Schema to serialize virtual 'id'

@@ -10,6 +10,22 @@ const ClickEventSchema = new mongoose.Schema({
     ref: 'UrlMapping',
     required: true,
   },
+  country: {
+    type: String,
+    default: 'Unknown',
+  },
+  device: {
+    type: String,
+    default: 'Desktop',
+  },
+  browser: {
+    type: String,
+    default: 'Unknown',
+  },
+  referrer: {
+    type: String,
+    default: 'Direct',
+  },
 });
 
 // Configure Schema to serialize virtual 'id'

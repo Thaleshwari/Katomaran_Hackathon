@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from './api';
 import {
   ArrowLeft, Link2, BarChart3, Clock, MousePointerClick,
-  Calendar, TrendingUp, ExternalLink, Copy, Zap
+  Calendar, TrendingUp, ExternalLink, Copy, Zap, Globe, Share2, Laptop, Globe2
 } from 'lucide-react';
 import { Toast } from './Toast';
 import { useTheme, ThemeToggle } from './ThemeContext';
@@ -90,7 +90,21 @@ export const UrlAnalytics = () => {
     const fetchAnalytics = async () => {
       try {
         const res = await api.get(`/urls/${id}/analytics`);
-        setData(res.data);
+        const d = res.data;
+        // Normalise — handle old backend that doesn't return geo/device fields
+        d.stats = {
+          today: 0,
+          lastSevenDays: 0,
+          allTime: 0,
+          lastVisited: null,
+          devices: [],
+          browsers: [],
+          countries: [],
+          referrers: [],
+          ...d.stats,
+        };
+        d.recentVisits = d.recentVisits || [];
+        setData(d);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load analytics');
       } finally {
@@ -131,7 +145,7 @@ export const UrlAnalytics = () => {
     );
   }
 
-  const { url, stats, timeline } = data;
+  const { url, stats, timeline, recentVisits } = data;
   const peakDay  = timeline.reduce((best, d) => d.clicks > best.clicks ? d : best, { clicks: 0, date: null });
   const avgClicks = (stats.allTime / 30).toFixed(1);
 
@@ -157,7 +171,7 @@ export const UrlAnalytics = () => {
             style={{ width: 'auto', padding: '0.5rem 1.25rem' }}
             onClick={() => navigate('/')}
           >
-            <ArrowLeft size={16} /> Dashboard
+            <ArrowLeft size={16} /> <span className="back-btn-text">Dashboard</span>
           </button>
         </div>
       </nav>
@@ -191,6 +205,13 @@ export const UrlAnalytics = () => {
 
             <p className="analytics-url-card-label">Short Link</p>
             <span className="url-link analytics-short-link">{getFullShortUrl(url.shortUrl).replace(/^https?:\/\//, '')}</span>
+
+            <div className="analytics-url-divider" />
+
+            <p className="analytics-url-card-label">Last Visited</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--foreground)', fontWeight: 500, margin: 0 }}>
+              {stats.lastVisited ? new Date(stats.lastVisited).toLocaleString() : 'Never'}
+            </p>
 
             <div className="analytics-url-actions">
               <button
@@ -262,8 +283,8 @@ export const UrlAnalytics = () => {
                   const pct = stats.allTime > 0 ? ((day.clicks / stats.allTime) * 100).toFixed(1) : 0;
                   return (
                     <tr key={day.date}>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{fmtFull(day.date)}</td>
-                      <td>
+                      <td data-label="Date" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{fmtFull(day.date)}</td>
+                      <td data-label="Clicks">
                         <span className="badge" style={{
                           background: day.clicks > 0 ? 'rgba(139,92,246,0.15)' : 'rgba(100,116,139,0.1)',
                           color: day.clicks > 0 ? 'var(--primary)' : 'var(--text-muted)'
@@ -271,7 +292,7 @@ export const UrlAnalytics = () => {
                           {day.clicks}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Share of Total">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <div style={{ flex: 1, height: 6, borderRadius: 99, background: 'var(--glass-border)', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,var(--primary),var(--secondary))', borderRadius: 99, transition: 'width 0.6s ease' }} />
@@ -282,6 +303,146 @@ export const UrlAnalytics = () => {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ── Advanced Visitors Analytics ── */}
+        <div className="analytics-details-grid animate-slide" style={{ animationDelay: '0.25s' }}>
+          {/* Countries / Geolocation */}
+          <div className="glass" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+            <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Globe size={20} style={{ color: 'var(--primary)' }} /> Top Locations (Geolocation)
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {stats.countries && stats.countries.length > 0 ? (
+                stats.countries.map((item) => (
+                  <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span>{item.name}</span>
+                      <span style={{ fontWeight: 600 }}>{item.count} clicks</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--glass-border)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${stats.allTime > 0 ? (item.count / stats.allTime) * 100 : 0}%`, background: 'var(--primary)', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>No location data recorded yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Referrers */}
+          <div className="glass" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+            <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Share2 size={20} style={{ color: 'var(--secondary)' }} /> Top Referrers
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {stats.referrers && stats.referrers.length > 0 ? (
+                stats.referrers.map((item) => (
+                  <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }} title={item.name}>{item.name}</span>
+                      <span style={{ fontWeight: 600 }}>{item.count} clicks</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--glass-border)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${stats.allTime > 0 ? (item.count / stats.allTime) * 100 : 0}%`, background: 'var(--secondary)', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>No referrer data recorded yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="analytics-details-grid animate-slide" style={{ animationDelay: '0.3s' }}>
+          {/* Devices */}
+          <div className="glass" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+            <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Laptop size={20} style={{ color: 'var(--accent)' }} /> Device Breakdown
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {stats.devices && stats.devices.length > 0 ? (
+                stats.devices.map((item) => (
+                  <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span>{item.name}</span>
+                      <span style={{ fontWeight: 600 }}>{item.count} clicks</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--glass-border)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${stats.allTime > 0 ? (item.count / stats.allTime) * 100 : 0}%`, background: 'var(--accent)', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>No device data recorded yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Browsers */}
+          <div className="glass" style={{ padding: '1.75rem', borderRadius: '16px' }}>
+            <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Globe2 size={20} style={{ color: 'var(--success)' }} /> Browser Breakdown
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {stats.browsers && stats.browsers.length > 0 ? (
+                stats.browsers.map((item) => (
+                  <div key={item.name} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span>{item.name}</span>
+                      <span style={{ fontWeight: 600 }}>{item.count} clicks</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 4, background: 'var(--glass-border)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${stats.allTime > 0 ? (item.count / stats.allTime) * 100 : 0}%`, background: 'var(--success)', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>No browser data recorded yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Recent Visit History ── */}
+        <section className="glass animate-slide" style={{ padding: '1.75rem', borderRadius: '16px', marginBottom: '3rem', animationDelay: '0.35s' }}>
+          <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Clock size={20} /> Recent Visit History
+          </h2>
+          <div className="table-wrapper" style={{ maxHeight: 280, overflowY: 'auto', borderRadius: '10px' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Visit No.</th>
+                  <th>Timestamp</th>
+                  <th>Location</th>
+                  <th>Device</th>
+                  <th>Browser</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentVisits && recentVisits.length > 0 ? (
+                  recentVisits.map((visit, idx) => (
+                    <tr key={visit.id}>
+                      <td data-label="Visit No." style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>#{idx + 1}</td>
+                      <td data-label="Timestamp">{new Date(visit.clickDate).toLocaleString()}</td>
+                      <td data-label="Location">{visit.country || 'Unknown'}</td>
+                      <td data-label="Device">{visit.device || 'Desktop'}</td>
+                      <td data-label="Browser">{visit.browser || 'Unknown'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                      No recent visits recorded.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
