@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, UserPlus, Globe, Layout, ShieldCheck, ArrowRight } from 'lucide-react';
+import { LogIn, UserPlus, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Toast } from './Toast';
+import { ThemeToggle } from './ThemeContext';
 
+/* ─── Login Page ──────────────────────────────────────────────── */
 export const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const [loading, setLoading]   = useState(false);
+  const [toast, setToast]       = useState(null);
+  const { login }    = useAuth();
+  const navigate     = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +28,11 @@ export const LoginPage = () => {
 
   return (
     <div className="auth-container">
+      {/* Theme toggle — top-right corner */}
+      <ThemeToggle style={{ position: 'absolute', top: 20, right: 20, zIndex: 1000, padding: '0.6rem 1rem' }} />
+
       {toast && <div className="toast-container"><Toast {...toast} onClose={() => setToast(null)} /></div>}
+
       <div className="auth-card glass animate-scale">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <div className="glass" style={{ padding: '0.75rem', borderRadius: '12px', background: 'var(--primary)' }}>
@@ -35,12 +41,13 @@ export const LoginPage = () => {
         </div>
         <h1 className="auth-title">Welcome Back</h1>
         <p className="auth-subtitle">Securely manage your shortened links</p>
+
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label className="label">Username</label>
-            <input 
-              type="text" 
-              className="input" 
+            <input
+              type="text"
+              className="input"
               placeholder="Your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -49,9 +56,9 @@ export const LoginPage = () => {
           </div>
           <div className="input-group">
             <label className="label">Password</label>
-            <input 
-              type="password" 
-              className="input" 
+            <input
+              type="password"
+              className="input"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -62,22 +69,27 @@ export const LoginPage = () => {
             {loading ? 'Authenticating...' : <><LogIn size={20} /> Login</>}
           </button>
         </form>
-        <p className="auth-subtitle" style={{ marginTop: '1.5rem', marginBottom: '0' }}>
-          Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Create one <ArrowRight size={14} style={{ verticalAlign: 'middle' }} /></Link>
+
+        <p className="auth-subtitle" style={{ marginTop: '1.5rem', marginBottom: 0 }}>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+            Create one <ArrowRight size={14} style={{ verticalAlign: 'middle' }} />
+          </Link>
         </p>
       </div>
     </div>
   );
 };
 
+/* ─── Register Page ───────────────────────────────────────────── */
 export const RegisterPage = () => {
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [toast, setToast]       = useState(null);
   const { register } = useAuth();
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,7 +106,11 @@ export const RegisterPage = () => {
 
   return (
     <div className="auth-container">
+      {/* Theme toggle — top-right corner */}
+      <ThemeToggle style={{ position: 'absolute', top: 20, right: 20, zIndex: 1000, padding: '0.6rem 1rem' }} />
+
       {toast && <div className="toast-container"><Toast {...toast} onClose={() => setToast(null)} /></div>}
+
       <div className="auth-card glass animate-scale">
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <div className="glass" style={{ padding: '0.75rem', borderRadius: '12px', background: 'var(--secondary)' }}>
@@ -102,13 +118,14 @@ export const RegisterPage = () => {
           </div>
         </div>
         <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Join Linkyfy to start simplifying links</p>
+        <p className="auth-subtitle">Join Shortify to start simplifying links</p>
+
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label className="label">Username</label>
-            <input 
-              type="text" 
-              className="input" 
+            <input
+              type="text"
+              className="input"
               placeholder="Choose a username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -117,9 +134,9 @@ export const RegisterPage = () => {
           </div>
           <div className="input-group">
             <label className="label">Email Address</label>
-            <input 
-              type="email" 
-              className="input" 
+            <input
+              type="email"
+              className="input"
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -128,9 +145,9 @@ export const RegisterPage = () => {
           </div>
           <div className="input-group">
             <label className="label">Password</label>
-            <input 
-              type="password" 
-              className="input" 
+            <input
+              type="password"
+              className="input"
               placeholder="Create a password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -141,8 +158,12 @@ export const RegisterPage = () => {
             {loading ? 'Creating account...' : <><UserPlus size={20} /> Register</>}
           </button>
         </form>
-        <p className="auth-subtitle" style={{ marginTop: '1.5rem', marginBottom: '0' }}>
-          Already have an account? <Link to="/login" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Login here</Link>
+
+        <p className="auth-subtitle" style={{ marginTop: '1.5rem', marginBottom: 0 }}>
+          Already have an account?{' '}
+          <Link to="/login" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+            Login here
+          </Link>
         </p>
       </div>
     </div>

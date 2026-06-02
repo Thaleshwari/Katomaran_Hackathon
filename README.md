@@ -23,11 +23,11 @@
 ## 🛠️ Technology Stack
 
 ### Backend
-- **Framework**: Spring Boot 4.0.3
-- **Language**: Java 17
-- **Database**: MySQL / JPA Hibernate
-- **Security**: JWT (JSON Web Token)
-- **Tooling**: Maven
+- **Framework**: Node.js & Express.js
+- **Language**: JavaScript (ES6)
+- **ODM**: Mongoose
+- **Database**: MongoDB (Atlas)
+- **Security**: JWT (JSON Web Token) & bcryptjs
 
 ### Frontend
 - **Framework**: React 19 (Vite)
@@ -41,10 +41,8 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [Java 17+](https://adoptium.net/)
 - [Node.js 18+](https://nodejs.org/)
-- [MySQL 8+](https://www.mysql.com/)
-- [Maven](https://maven.apache.org/download.cgi)
+- [MongoDB Atlas Account or Local MongoDB](https://www.mongodb.com/)
 
 ### Installation
 
@@ -57,12 +55,16 @@
 2. **Backend Setup**:
    - Navigate to the backend directory:
      ```bash
-     cd url-shortener-sb
+     cd backend
      ```
-   - Configure your MySQL settings in `src/main/resources/application.properties`.
-   - Run the Spring Boot application:
+   - Configure your MySQL settings and JWT secret in the `.env` file.
+   - Install dependencies:
      ```bash
-     mvn spring-boot:run
+     npm install
+     ```
+   - Run the Express server in development mode:
+     ```bash
+     npm run dev
      ```
 
 3. **Frontend Setup**:
