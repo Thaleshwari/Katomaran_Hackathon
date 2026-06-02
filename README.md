@@ -1,110 +1,273 @@
-# Linkyfy - Modern URL Shortener
+# Shortify - Modern URL Shortener
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-brightgreen)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-19.2.4-61DAFB)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8.0.1-646CFF)](https://vitejs.dev/)
+![Shortify Banner](https://img.shields.io/badge/MERN-Stack-green)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-**Linkyfy** is a sleek, modern, and powerful full-stack URL shortening service designed with a focus on ease of use and visual appeal. It features a premium glassmorphism-style UI and a robust backend for reliable link redirection and analytical tracking.
+**Shortify** is a modern URL shortening platform built using the MERN stack. It allows users to create short, shareable links, track analytics, and manage URLs through a clean and responsive dashboard.
 
 ---
 
-## ✨ Features
+# 🚀 Features
 
-- **🚀 Instant URL Shortening**: Create concise, shareable links in seconds.
-- **🎨 Glassmorphism UI**: A stunning, modern design for a premium user experience.
-- **🛡️ Secure Access**: JWT-based authentication for user registration and login.
-- **📊 Analytics Dashboard**: Track who's clicking your links and when.
-- **🔗 Reliable Redirection**: Fast and dependable redirect system built with Spring Boot.
-- **📱 Fully Responsive**: Seamless experience across mobile and desktop devices.
-
----
-
-## 🛠️ Technology Stack
-
-### Backend
-- **Framework**: Node.js & Express.js
-- **Language**: JavaScript (ES6)
-- **ODM**: Mongoose
-- **Database**: MongoDB (Atlas)
-- **Security**: JWT (JSON Web Token) & bcryptjs
-
-### Frontend
-- **Framework**: React 19 (Vite)
-- **Styling**: Vanilla CSS (Custom Design System)
-- **Navigation**: React Router 7
-- **API Interaction**: Axios
-- **Icons**: Lucide React
+* 🔗 Create short URLs instantly
+* 📊 View detailed click analytics
+* 🔐 Secure JWT-based Authentication
+* 👤 User Registration & Login
+* 📱 Fully Responsive Design
+* 🌙 Dark/Light Theme Support
+* ⚡ Fast and Reliable URL Redirection
+* 📈 Dashboard for URL Management
+* 📱 Automatic QR Code Generation for easy sharing and mobile access
 
 ---
 
-## 🚀 Getting Started
+# 🛠️ Tech Stack
 
-### Prerequisites
-- [Node.js 18+](https://nodejs.org/)
-- [MongoDB Atlas Account or Local MongoDB](https://www.mongodb.com/)
+## Frontend
 
-### Installation
+* React.js
+* Vite
+* React Router
+* Axios
+* Lucide React
+* Custom CSS
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/madeshwari/Linkyfy.git
-   cd url-shortener
-   ```
+## Backend
 
-2. **Backend Setup**:
-   - Navigate to the backend directory:
-     ```bash
-     cd backend
-     ```
-   - Configure your MySQL settings and JWT secret in the `.env` file.
-   - Install dependencies:
-     ```bash
-     npm install
-     ```
-   - Run the Express server in development mode:
-     ```bash
-     npm run dev
-     ```
-
-3. **Frontend Setup**:
-   - Navigate to the frontend directory:
-     ```bash
-     cd ../frontend
-     ```
-   - Install dependencies:
-     ```bash
-     npm install
-     ```
-   - Start the development server:
-     ```bash
-     npm run dev
-     ```
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT Authentication
+* bcryptjs
 
 ---
 
-## 📸 Screenshots
+# 📂 Project Structure
 
-*(Add your screenshots here)*
+```text
+Shortify/
+│
+├── backend/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── config/
+│   └── server.js
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   └── vite.config.js
+│
+└── README.md
+```
 
 ---
 
-## 📝 License
+# ⚙️ Setup Instructions
 
-Distributed under the MIT License. See `LICENSE` for more information.
+## Prerequisites
 
----
-
-## 🤝 Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+* Node.js (v18 or higher)
+* npm
+* MongoDB Atlas Account
 
 ---
 
-*Linkyfy - Making the web shorter and more beautiful.*
+## 1. Clone Repository
+
+```bash
+git clone https://github.com/madeshwari/Shortify.git
+
+cd Shortify
+```
+
+---
+
+## 2. Backend Setup
+
+```bash
+cd backend
+
+npm install
+```
+
+Create a `.env` file:
+
+```env
+PORT=5000
+
+MONGO_URI=your_mongodb_connection_string
+
+JWT_SECRET=your_jwt_secret
+```
+
+Run the backend:
+
+```bash
+npm run dev
+```
+
+Server runs on:
+
+```text
+http://localhost:5000
+```
+
+---
+
+## 3. Frontend Setup
+
+```bash
+cd frontend
+
+npm install
+
+npm run dev
+```
+
+Frontend runs on:
+
+```text
+http://localhost:5173
+```
+
+---
+
+# 🔍 Assumptions Made
+
+1. Users must register before creating and managing URLs.
+2. MongoDB Atlas is used as the primary database.
+3. JWT tokens are stored securely on the client side.
+4. Internet access is required for URL redirection.
+5. Analytics are based on successful URL visits.
+6. Users can only view and manage URLs created by their own account.
+
+---
+
+# 🤖 AI Planning Document
+
+## Problem Statement
+
+Users often need shorter URLs for sharing links across social media, emails, presentations, and messaging platforms. Long URLs are difficult to remember and less visually appealing.
+
+## Solution
+
+Shortify provides:
+
+* Secure user authentication
+* Fast URL shortening
+* Analytics tracking
+* User-friendly dashboard
+* Responsive modern UI
+
+## Development Planning
+
+### Phase 1
+
+* Setup MERN project structure
+* Configure MongoDB Atlas
+* Implement authentication
+
+### Phase 2
+
+* Build URL shortening APIs
+* Generate unique short codes
+* Create redirection logic
+
+### Phase 3
+
+* Build React frontend
+* Dashboard implementation
+* Analytics integration
+
+### Phase 4
+
+* Testing
+* Deployment
+* Documentation
+
+---
+
+# 🏗️ Architecture Diagram
+
+```text
+                ┌─────────────────┐
+                │     Client      │
+                │ React + Vite UI │
+                └────────┬────────┘
+                         │
+                         ▼
+                ┌─────────────────┐
+                │ Express Server  │
+                │ REST APIs       │
+                └────────┬────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         ▼                               ▼
+ ┌──────────────┐               ┌──────────────┐
+ │ JWT Auth     │               │ URL Service  │
+ │ Login/Register│              │ Shorten URL  │
+ └──────────────┘               └──────────────┘
+         │                               │
+         └───────────────┬───────────────┘
+                         ▼
+                ┌─────────────────┐
+                │ MongoDB Atlas   │
+                │ Users & URLs    │
+                └─────────────────┘
+```
+
+---
+
+# 🎥 Application Demo Video
+
+
+---
+
+# 📸 Screenshots
+
+## Login Page
+
+
+
+## Dashboard
+
+
+
+## URL Analytics
+
+
+
+---
+
+# 🚀 Future Enhancements
+
+* Custom Short URLs
+* Password Protected Links
+* Expiry Date Support
+* Advanced Analytics
+* Team Collaboration Features
+
+---
+
+# 📝 License
+
+Distributed under the MIT License.
+
+---
+
+# 👩‍💻 Author
+
+**Thaleshwari J**
+
+GitHub:
+https://github.com/thaleshwari
+
+---
+
+## Hackathon Declaration
+
+This project is a part of a hackathon run by https://katomaran.com
