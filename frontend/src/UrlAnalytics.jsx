@@ -8,6 +8,15 @@ import {
 import { Toast } from './Toast';
 import { useTheme, ThemeToggle } from './ThemeContext';
 
+const getBackendBaseUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  return apiUrl.replace(/\/api\/?$/, '');
+};
+
+const getFullShortUrl = (shortUrl) => {
+  return `${getBackendBaseUrl()}/s/${shortUrl}`;
+};
+
 /* ─── Helpers ─────────────────────────────────────────────────── */
 const fmtDate = (iso) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -92,7 +101,7 @@ export const UrlAnalytics = () => {
   }, [id]);
 
   const copyShortUrl = () => {
-    navigator.clipboard.writeText(`http://localhost:8080/s/${data.url.shortUrl}`);
+    navigator.clipboard.writeText(getFullShortUrl(data.url.shortUrl));
     setToast({ message: 'Short URL copied!', type: 'success' });
   };
 
@@ -181,7 +190,7 @@ export const UrlAnalytics = () => {
             <div className="analytics-url-divider" />
 
             <p className="analytics-url-card-label">Short Link</p>
-            <span className="url-link analytics-short-link">localhost:8080/s/{url.shortUrl}</span>
+            <span className="url-link analytics-short-link">{getFullShortUrl(url.shortUrl).replace(/^https?:\/\//, '')}</span>
 
             <div className="analytics-url-actions">
               <button
@@ -192,7 +201,7 @@ export const UrlAnalytics = () => {
                 <Copy size={14} /> Copy Link
               </button>
               <a
-                href={`http://localhost:8080/s/${url.shortUrl}`}
+                href={getFullShortUrl(url.shortUrl)}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-primary"

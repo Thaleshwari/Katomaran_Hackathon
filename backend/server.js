@@ -14,16 +14,33 @@ const redirectRoutes = require('./routes/redirectRoutes');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Trust proxy to read the correct client protocol/host when deployed behind reverse proxies (like Render)
+app.set('trust proxy', true);
 
+// CORS configuration matching your frontend ports and deployed environments
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://katomaran-hackathon.vercel.app'
+];
 
-
-// CORS configuration matching your frontend ports
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://katomaran-hackathon.vercel.app'
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, postman, or curl)
+    if (!origin) return callback(null, true);
+
+    const isAllowed = allowedOrigins.includes(origin) ||
+                      origin.endsWith('.vercel.app') ||
+                      origin.endsWith('.onrender.com') ||
+                      (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL.trim());
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS Blocked] Request from unauthorized origin: ${origin}`);
+      callback(null, false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Authorization', 'Content-Type', 'Accept'],
   credentials: true,

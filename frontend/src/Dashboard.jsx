@@ -95,6 +95,15 @@ const QrModal = ({ urlEntry, onClose }) => {
   );
 };
 
+const getBackendBaseUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  return apiUrl.replace(/\/api\/?$/, '');
+};
+
+const getFullShortUrl = (shortUrl) => {
+  return `${getBackendBaseUrl()}/s/${shortUrl}`;
+};
+
 /* ─── Dashboard ─────────────────────────────────────────────── */
 export const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -155,13 +164,10 @@ export const Dashboard = () => {
   };
 
   const copyToClipboard = (text) => {
-    const fullUrl = window.location.origin.includes('localhost')
-      ? `http://localhost:8080/s/${text}`
-      : `${window.location.origin}/s/${text}`;
+    const fullUrl = getFullShortUrl(text);
     navigator.clipboard.writeText(fullUrl);
     showToast('Link copied to clipboard!');
   };
-
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -254,7 +260,9 @@ export const Dashboard = () => {
                       </div>
                     </td>
                     <td>
-                      <span className="url-link" style={{ fontWeight: 500 }}>{url.shortUrl}</span>
+                      <a href={getFullShortUrl(url.shortUrl)} target="_blank" rel="noreferrer" className="url-link" style={{ fontWeight: 500 }}>
+                        {url.shortUrl}
+                      </a>
                     </td>
                     <td>
                       <span className="badge">{url.clickCount} clicks</span>
@@ -269,7 +277,7 @@ export const Dashboard = () => {
                         <button onClick={() => copyToClipboard(url.shortUrl)} className="btn btn-secondary" style={{ padding: '0.5rem', borderRadius: '8px' }} title="Copy to clipboard">
                           <Copy size={16} />
                         </button>
-                        <a href={`http://localhost:8080/s/${url.shortUrl}`} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem', borderRadius: '8px' }} title="Open link">
+                        <a href={getFullShortUrl(url.shortUrl)} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem', borderRadius: '8px' }} title="Open link">
                           <ExternalLink size={16} />
                         </a>
                         <button

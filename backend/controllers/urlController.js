@@ -2,6 +2,18 @@ const { UrlMapping, ClickEvent } = require('../models');
 const QRCode = require('qrcode');
 
 /**
+ * Get the backend base URL dynamically or from environment variables
+ */
+const getBaseUrl = (req) => {
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL.trim();
+  }
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  return `${protocol}://${host}`;
+};
+
+/**
  * Generate a random 8-character alphanumeric string for the short URL
  */
 const generateShortUrl = () => {
@@ -117,7 +129,7 @@ const getQrCode = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    const baseUrl = process.env.BASE_URL || "http://localhost:8080";
+    const baseUrl = getBaseUrl(req);
     const fullShortUrl = `${baseUrl}/s/${urlMapping.shortUrl}`;
 
     const qrDataUrl = await QRCode.toDataURL(fullShortUrl, {
