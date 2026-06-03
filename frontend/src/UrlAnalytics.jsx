@@ -86,6 +86,7 @@ export const UrlAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState(null);
   const [toast, setToast]   = useState(null);
+  const [qrData, setQrData] = useState(null);
 
   const { theme } = useTheme();
 
@@ -109,6 +110,7 @@ export const UrlAnalytics = () => {
         };
         d.recentVisits = d.recentVisits || [];
         setData(d);
+        api.get(`/urls/${id}/qrcode`).then(r => setQrData(r.data.qrCode)).catch(console.error);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load analytics');
       } finally {
@@ -160,11 +162,18 @@ export const UrlAnalytics = () => {
       {/* ── Navbar ── */}
       <nav className="navbar glass animate-fade">
         {/* Left: Logo */}
-        <a href="/" className="logo" style={{ textDecoration: 'none' }}>
-          <div style={{ padding: '0.4rem', borderRadius: '8px', background: 'var(--primary)', display: 'flex' }}>
-            <Link2 size={24} color="white" />
-          </div>
-          <span className="logo-text">Shortify</span>
+        <a href="/dashboard" className="logo">
+          <img
+            src="/logo.png"
+            alt="Shortify Logo"
+            style={{ height: '40px', width: '40px', objectFit: 'contain', borderRadius: '8px' }}
+          />
+          <span style={{
+            ...(theme === 'dark'
+              ? { background: 'linear-gradient(to right, #ffffff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }
+              : { color: '#000000', WebkitTextFillColor: '#000000' }),
+            fontWeight: 700,
+          }}>Shortify</span>
         </a>
 
         {/* Right: Theme toggle + Back */}
@@ -202,22 +211,46 @@ export const UrlAnalytics = () => {
 
           {/* Right: URL info card */}
           <div className="glass analytics-url-card-v2">
-            <p className="analytics-url-card-label">Original URL</p>
-            <p className="analytics-url-original" title={url.originalUrl}>{url.originalUrl}</p>
+            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="analytics-url-card-label">Original URL</p>
+                <p className="analytics-url-original" title={url.originalUrl}>{url.originalUrl}</p>
 
-            <div className="analytics-url-divider" />
+                <div className="analytics-url-divider" />
 
-            <p className="analytics-url-card-label">Short Link</p>
-            <span className="url-link analytics-short-link">{getFullShortUrl(url.shortUrl).replace(/^https?:\/\//, '')}</span>
+                <p className="analytics-url-card-label">Short Link</p>
+                <span className="url-link analytics-short-link">{url.shortUrl}</span>
 
-            <div className="analytics-url-divider" />
+                <div className="analytics-url-divider" />
 
-            <p className="analytics-url-card-label">Last Visited</p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--foreground)', fontWeight: 500, margin: 0 }}>
-              {stats.lastVisited ? new Date(stats.lastVisited).toLocaleString() : 'Never'}
-            </p>
+                <p className="analytics-url-card-label">Last Visited</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--foreground)', fontWeight: 500, margin: 0 }}>
+                  {stats.lastVisited ? new Date(stats.lastVisited).toLocaleString() : 'Never'}
+                </p>
+              </div>
 
-            <div className="analytics-url-actions">
+              {qrData && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                  <p className="analytics-url-card-label" style={{ margin: 0 }}>QR Code</p>
+                  <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '12px' }}>
+                    <img src={qrData} alt="QR Code" style={{ width: '100px', height: '100px', display: 'block' }} />
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = qrData;
+                      link.download = `qr-${url.shortUrl}.png`;
+                      link.click();
+                    }}
+                    style={{ fontSize: '0.75rem', color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Download QR
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="analytics-url-actions" style={{ marginTop: '1.25rem' }}>
               <button
                 onClick={copyShortUrl}
                 className="btn btn-secondary"
@@ -230,7 +263,7 @@ export const UrlAnalytics = () => {
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-primary"
-                style={{ flex: 1, padding: '0.45rem 0.75rem', fontSize: '0.8rem' }}
+                style={{ flex: 1, padding: '0.45rem 0.75rem', fontSize: '0.8rem', textDecoration: 'none' }}
               >
                 <ExternalLink size={14} /> Open Link
               </a>

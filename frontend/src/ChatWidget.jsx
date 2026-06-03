@@ -138,7 +138,7 @@ export const ChatWidget = () => {
         ...prev,
         {
           role: 'assistant',
-          content: "❌ Sorry, I encountered an error while communicating with the AI server. Please make sure the backend is running and the SambaNova API Key is valid."
+          content: "❌ Sorry, I encountered an error while communicating with the AI server. Please make sure the backend is running and the API Key is valid."
         }
       ]);
     } finally {
@@ -174,7 +174,7 @@ export const ChatWidget = () => {
                 <h4>Shortify Assistant</h4>
                 <div className="status-indicator">
                   <span className="dot"></span>
-                  <span>Online • SambaNova AI</span>
+                  <span>Online</span>
                 </div>
               </div>
             </div>

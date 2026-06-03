@@ -7,8 +7,18 @@ import { Dashboard } from './Dashboard';
 import { UrlAnalytics } from './UrlAnalytics';
 import { PublicStats } from './PublicStats';
 import { ChatWidget } from './ChatWidget';
+import { LandingPage } from './LandingPage';
 import './index.css';
 
+/* ── Redirect logged-in users straight to dashboard ── */
+const PublicOnlyRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
+/* ── Block unauthenticated users from dashboard ── */
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) {
@@ -20,7 +30,7 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/" replace />;
   return (
     <>
       {children}
@@ -35,26 +45,28 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
-            <Route path="/login"    element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            {/* Public landing */}
+            <Route path="/" element={
+              <PublicOnlyRoute><LandingPage /></PublicOnlyRoute>
+            } />
+
+            {/* Auth pages — redirect to dashboard if already logged in */}
+            <Route path="/login"    element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+            <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+
+            {/* Public stats — no auth required */}
             <Route path="/stats/:shortUrl" element={<PublicStats />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics/:id"
-              element={
-                <ProtectedRoute>
-                  <UrlAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" />} />
+
+            {/* Protected pages */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute><Dashboard /></ProtectedRoute>
+            } />
+            <Route path="/analytics/:id" element={
+              <ProtectedRoute><UrlAnalytics /></ProtectedRoute>
+            } />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </AuthProvider>

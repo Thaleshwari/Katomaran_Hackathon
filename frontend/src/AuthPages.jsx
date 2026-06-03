@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, UserPlus, ShieldCheck, ArrowRight } from 'lucide-react';
+import { LogIn, UserPlus, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Toast } from './Toast';
 import { ThemeToggle } from './ThemeContext';
 
 /* ─── Login Page ──────────────────────────────────────────────── */
 export const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [toast, setToast]       = useState(null);
+  const [username, setUsername]       = useState('');
+  const [password, setPassword]       = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [toast, setToast]             = useState(null);
   const { login }    = useAuth();
   const navigate     = useNavigate();
 
@@ -20,7 +21,7 @@ export const LoginPage = () => {
     const success = await login(username, password);
     setLoading(false);
     if (success) {
-      navigate('/');
+      navigate('/dashboard');
     } else {
       setToast({ message: 'Login failed! Please check your credentials.', type: 'error' });
     }
@@ -56,14 +57,36 @@ export const LoginPage = () => {
           </div>
           <div className="input-group">
             <label className="label">Password</label>
-            <input
-              type="password"
-              className="input"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ paddingRight: '2.8rem', width: '100%', boxSizing: 'border-box' }}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted, #888)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Authenticating...' : <><LogIn size={20} /> Login</>}
@@ -83,11 +106,12 @@ export const LoginPage = () => {
 
 /* ─── Register Page ───────────────────────────────────────────── */
 export const RegisterPage = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [toast, setToast]       = useState(null);
+  const [username, setUsername]       = useState('');
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [toast, setToast]             = useState(null);
   const { register } = useAuth();
   const navigate     = useNavigate();
 
@@ -145,14 +169,36 @@ export const RegisterPage = () => {
           </div>
           <div className="input-group">
             <label className="label">Password</label>
-            <input
-              type="password"
-              className="input"
-              placeholder="Create a password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="input"
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ paddingRight: '2.8rem', width: '100%', boxSizing: 'border-box' }}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted, #888)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Creating account...' : <><UserPlus size={20} /> Register</>}

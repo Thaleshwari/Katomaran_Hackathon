@@ -10,14 +10,14 @@ import { useTheme, ThemeToggle } from './ThemeContext';
 const parseCSV = (text) => {
   const lines = text.split(/\r?\n/);
   const result = [];
-  
+
   const hasHeader = lines[0] && (lines[0].toLowerCase().includes('url') || lines[0].toLowerCase().includes('original'));
   const startIndex = hasHeader ? 1 : 0;
 
   for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    
+
     const cols = line.split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
     if (cols.length > 0 && cols[0]) {
       result.push({
@@ -298,6 +298,7 @@ const Sparkline = ({ urlId, clickCount }) => {
 /* ─── Dashboard ─────────────────────────────────────────────── */
 export const Dashboard = () => {
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
   const [originalUrl, setOriginalUrl] = useState('');
   const [customAlias, setCustomAlias] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -317,14 +318,14 @@ export const Dashboard = () => {
   const [toast, setToast] = useState(null);
   const [qrEntry, setQrEntry] = useState(null);
   const [editEntry, setEditEntry] = useState(null);
-  
+
   // Search, Filter & Sort States
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOption, setFilterOption] = useState('all');
   const [sortOption, setSortOption] = useState('newest');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => { fetchUrls(); }, []);
@@ -388,7 +389,7 @@ export const Dashboard = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const handleCsvChange = (text) => {
@@ -452,7 +453,7 @@ export const Dashboard = () => {
     return !u.expiryDate || new Date(u.expiryDate) >= new Date();
   }).length;
   const activePercentage = totalLinks > 0 ? ((activeLinks / totalLinks) * 100).toFixed(1) : '0.0';
-  
+
   const expiringSoonCount = urls.filter(u => {
     if (!u.expiryDate) return false;
     const diff = new Date(u.expiryDate) - new Date();
@@ -529,18 +530,25 @@ export const Dashboard = () => {
       {editEntry && <EditModal urlEntry={editEntry} onClose={() => setEditEntry(null)} onSaveSuccess={(msg) => { showToast(msg); fetchUrls(); }} />}
 
       <nav className="navbar glass animate-fade">
-        <a href="/" className="logo">
-          <div className="glass" style={{ padding: '0.4rem', borderRadius: '8px', background: 'var(--primary)' }}>
-            <Link2 size={24} color="white" />
-          </div>
-          <span style={{ background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Shortify</span>
+        <a href="/dashboard" className="logo">
+          <img
+            src="/logo.png"
+            alt="Shortify Logo"
+            style={{ height: '40px', width: '40px', objectFit: 'contain', borderRadius: '8px' }}
+          />
+          <span style={{
+            ...(theme === 'dark'
+              ? { background: 'linear-gradient(to right, #ffffff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }
+              : { color: '#000000', WebkitTextFillColor: '#000000' }),
+            fontWeight: 700,
+          }}>Shortify</span>
         </a>
         <div className="nav-actions">
           <div className="user-badge glass">
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }}></div>
             {user?.username}
           </div>
-          <ThemeToggle style={{ whiteSpace: 'nowrap'}}/>
+          <ThemeToggle style={{ whiteSpace: 'nowrap' }} />
           <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} title="Logout">
             <LogOut size={16} /> <span className="logout-btn-text">Logout</span>
           </button>
@@ -552,7 +560,7 @@ export const Dashboard = () => {
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '9999px', background: 'rgba(139, 92, 246, 0.1)', color: 'var(--primary)', fontSize: '0.875rem', fontWeight: 600, marginBottom: '1.5rem' }}>
             <Zap size={14} fill="var(--primary)" /> Premium Link Shortening
           </div>
-          <h1>Simplify Your Links,<br/>Amplify Your Reach</h1>
+          <h1>Simplify Your Links,<br />Amplify Your Reach</h1>
           <p>Shortify is the premium URL shortener for modern creators. Shorten, track, and manage your links with elegance.</p>
         </section>
 
@@ -733,7 +741,7 @@ export const Dashboard = () => {
 
         {/* ─── Links List Section ─────────────────────────────── */}
         <section className="url-list-container animate-slide" style={{ animationDelay: '0.2s' }}>
-          
+
           {/* Header Row: Title on Left, Controls on Right */}
           <div className="dashboard-header-row">
             <div className="dashboard-title-section">
@@ -978,8 +986,8 @@ export const Dashboard = () => {
                         {/* Left Section: Favicon & Domain Details */}
                         <div className="card-left-section">
                           <div className="domain-icon-wrapper" style={{ borderColor: getIconBorderColor(domain) }}>
-                            <img 
-                              src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`} 
+                            <img
+                              src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
                               alt={domain}
                               className="domain-icon"
                               onError={(e) => { e.target.src = 'https://www.google.com/s2/favicons?sz=64&domain=google.com'; }}
@@ -1085,9 +1093,9 @@ export const Dashboard = () => {
                             >
                               <Edit size={14} />
                             </button>
-                            <button 
-                              onClick={() => handleDelete(url.id)} 
-                              className="btn btn-secondary action-icon-btn action-delete" 
+                            <button
+                              onClick={() => handleDelete(url.id)}
+                              className="btn btn-secondary action-icon-btn action-delete"
                               title="Delete link"
                               style={{ color: 'var(--error)' }}
                             >
