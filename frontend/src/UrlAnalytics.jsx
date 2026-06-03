@@ -214,7 +214,19 @@ export const UrlAnalytics = () => {
             <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="analytics-url-card-label">Original URL</p>
-                <p className="analytics-url-original" title={url.originalUrl}>{url.originalUrl}</p>
+                <p 
+                  className="analytics-url-original" 
+                  title={url.originalUrl}
+                  style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '100%',
+                    display: 'block'
+                  }}
+                >
+                  {url.originalUrl}
+                </p>
 
                 <div className="analytics-url-divider" />
 
