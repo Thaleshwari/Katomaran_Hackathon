@@ -13,8 +13,12 @@ const getBackendBaseUrl = () => {
   return apiUrl.replace(/\/api\/?$/, '');
 };
 
+const getShortBaseUrl = () => {
+  return import.meta.env.VITE_SHORT_BASE_URL || getBackendBaseUrl();
+};
+
 const getFullShortUrl = (shortUrl) => {
-  return `${getBackendBaseUrl()}/s/${shortUrl}`;
+  return `${getShortBaseUrl()}/s/${shortUrl}`;
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────── */

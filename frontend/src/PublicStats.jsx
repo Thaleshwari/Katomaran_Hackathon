@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Calendar, BarChart3, ShieldCheck, Link2 } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, BarChart3, ShieldCheck, Link2, Share2, Check, LogIn } from 'lucide-react';
 import api from './api';
 import { ThemeToggle } from './ThemeContext';
 
@@ -10,6 +10,17 @@ export const PublicStats = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy public stats URL:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchPublicStats = async () => {
@@ -74,14 +85,14 @@ export const PublicStats = () => {
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <ThemeToggle />
-          <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.5rem 1.25rem' }} onClick={() => navigate('/login')}>
-            Login / Signup
+          <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/login')} title="Login / Signup">
+            <LogIn size={16} /> <span className="login-btn-text">Login / Signup</span>
           </button>
         </div>
       </nav>
 
       <main className="main-content">
-        <section className="analytics-page-header animate-slide">
+        <section className="analytics-page-header animate-slide" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem' }}>
           <div>
             <div className="analytics-badge">
               <ShieldCheck size={14} /> Public Stats Page
@@ -95,6 +106,33 @@ export const PublicStats = () => {
               <span>Created {fmtFull(url.createdDate)}</span>
             </div>
           </div>
+
+          <button 
+            className="btn btn-primary" 
+            style={{ 
+              width: 'auto', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              padding: '0.6rem 1.2rem',
+              fontSize: '0.9rem',
+              background: copied ? 'linear-gradient(180deg, #10B981 0%, #059669 100%)' : undefined,
+              borderColor: copied ? '#10B981' : undefined,
+              color: copied ? '#FFFFFF' : undefined
+            }}
+            onClick={handleShare}
+            title="Copy Public Stats URL to share"
+          >
+            {copied ? (
+              <>
+                <Check size={16} /> Link Copied!
+              </>
+            ) : (
+              <>
+                <Share2 size={16} /> Share Report
+              </>
+            )}
+          </button>
 
           <div className="glass analytics-url-card-v2">
             <p className="analytics-url-card-label">Original Destination</p>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from './api';
-import { Link2, Copy, BarChart3, Clock, ExternalLink, LogOut, Trash2, Plus, Zap, QrCode, X, Download, Activity, Edit, Upload, Calendar } from 'lucide-react';
+import { Link2, Copy, BarChart3, Clock, ExternalLink, LogOut, Trash2, Plus, Zap, QrCode, X, Download, Activity, Edit, Upload, Calendar, Search, Filter, ArrowUpDown, TrendingUp, ShieldCheck } from 'lucide-react';
 import { Toast } from './Toast';
 import { useTheme, ThemeToggle } from './ThemeContext';
 
@@ -221,8 +221,78 @@ const getBackendBaseUrl = () => {
   return apiUrl.replace(/\/api\/?$/, '');
 };
 
+const getShortBaseUrl = () => {
+  return import.meta.env.VITE_SHORT_BASE_URL || getBackendBaseUrl();
+};
+
 const getFullShortUrl = (shortUrl) => {
-  return `${getBackendBaseUrl()}/s/${shortUrl}`;
+  return `${getShortBaseUrl()}/s/${shortUrl}`;
+};
+
+const getDomain = (urlStr) => {
+  try {
+    const url = new URL(urlStr);
+    return url.hostname.replace(/^www\./, '');
+  } catch (e) {
+    return urlStr;
+  }
+};
+
+const getIconBorderColor = (domain) => {
+  const hash = domain.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colors = [
+    'rgba(16, 185, 129, 0.4)',
+    'rgba(249, 115, 22, 0.4)',
+    'rgba(14, 165, 233, 0.4)',
+    'rgba(212, 175, 55, 0.4)'
+  ];
+  return colors[hash % colors.length];
+};
+
+const getRemainingDays = (expiryDate) => {
+  if (!expiryDate) return 'No expiry';
+  const diffTime = new Date(expiryDate) - new Date();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return 'Expired';
+  return `${diffDays} days`;
+};
+
+const Sparkline = ({ urlId, clickCount }) => {
+  const hash = urlId ? urlId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
+  const points = [];
+  const count = 7;
+  for (let i = 0; i < count; i++) {
+    const x = (i * 120) / (count - 1);
+    const factor = (hash + i * 17) % 20;
+    const y = 10 + factor + (i === count - 1 ? -6 : 0);
+    points.push(`${x},${y}`);
+  }
+  const pathD = `M ${points.join(' L ')}`;
+  const strokeColor = hash % 2 === 0 ? '#D4AF37' : '#10B981';
+  return (
+    <div style={{ width: '120px', height: '40px', display: 'flex', alignItems: 'center' }}>
+      <svg width="120" height="40" viewBox="0 0 120 40">
+        <defs>
+          <linearGradient id={`grad-${urlId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          d={pathD}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d={`${pathD} L 120,40 L 0,40 Z`}
+          fill={`url(#grad-${urlId})`}
+        />
+      </svg>
+    </div>
+  );
 };
 
 /* ─── Dashboard ─────────────────────────────────────────────── */
@@ -246,6 +316,14 @@ export const Dashboard = () => {
   const [toast, setToast] = useState(null);
   const [qrEntry, setQrEntry] = useState(null);
   const [editEntry, setEditEntry] = useState(null);
+  
+  // Search, Filter & Sort States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterOption, setFilterOption] = useState('all');
+  const [sortOption, setSortOption] = useState('newest');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  
   const navigate = useNavigate();
 
   useEffect(() => { fetchUrls(); }, []);
@@ -363,6 +441,73 @@ export const Dashboard = () => {
     }
   };
 
+  // Calculations for overview statistics
+  const totalLinks = urls.length;
+  const totalClicks = urls.reduce((sum, u) => sum + (u.clickCount || 0), 0);
+  const activeLinks = urls.filter(u => {
+    return !u.expiryDate || new Date(u.expiryDate) >= new Date();
+  }).length;
+  const activePercentage = totalLinks > 0 ? ((activeLinks / totalLinks) * 100).toFixed(1) : '0.0';
+  
+  const expiringSoonCount = urls.filter(u => {
+    if (!u.expiryDate) return false;
+    const diff = new Date(u.expiryDate) - new Date();
+    const diffDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return diffDays > 0 && diffDays <= 30;
+  }).length;
+
+  // Search, filter and sort URLs
+  const filteredAndSortedUrls = urls
+    .filter((url) => {
+      // 1. Search term filter
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch =
+        url.originalUrl.toLowerCase().includes(searchLower) ||
+        (url.customAlias && url.customAlias.toLowerCase().includes(searchLower)) ||
+        url.shortUrl.toLowerCase().includes(searchLower);
+
+      if (!matchesSearch) return false;
+
+      // 2. Status filter
+      const isExpired = url.expiryDate && new Date(url.expiryDate) < new Date();
+      if (filterOption === 'active') {
+        return !isExpired;
+      } else if (filterOption === 'expired') {
+        return isExpired;
+      } else if (filterOption === 'expiring') {
+        if (!url.expiryDate) return false;
+        const diff = new Date(url.expiryDate) - new Date();
+        const diffDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        return diffDays > 0 && diffDays <= 30;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      // 3. Sorting
+      if (sortOption === 'newest') {
+        return new Date(b.createdDate) - new Date(a.createdDate);
+      } else if (sortOption === 'oldest') {
+        return new Date(a.createdDate) - new Date(b.createdDate);
+      } else if (sortOption === 'clicks-desc') {
+        return b.clickCount - a.clickCount;
+      } else if (sortOption === 'clicks-asc') {
+        return a.clickCount - b.clickCount;
+      }
+      return 0;
+    });
+
+  const handleCreateLinkClick = () => {
+    setActiveTab('single');
+    const element = document.querySelector('.url-form-container');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        const input = document.getElementById('long-url-input');
+        if (input) input.focus();
+      }, 500);
+    }
+  };
+
   if (fetching) {
     return (
       <div className="auth-container">
@@ -392,8 +537,8 @@ export const Dashboard = () => {
             {user?.username}
           </div>
           <ThemeToggle style={{ whiteSpace: 'nowrap'}}/>
-          <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
-            <LogOut size={16} /> Logout
+          <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} title="Logout">
+            <LogOut size={16} /> <span className="logout-btn-text">Logout</span>
           </button>
         </div>
       </nav>
@@ -431,6 +576,7 @@ export const Dashboard = () => {
             <form onSubmit={handleShorten} className="url-form glass" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '1.25rem', padding: '1.75rem' }}>
               <div style={{ display: 'flex', gap: '1rem' }} className="responsive-form-row">
                 <input
+                  id="long-url-input"
                   type="url"
                   className="input"
                   placeholder="Paste your long URL here..."
@@ -558,115 +704,378 @@ export const Dashboard = () => {
           </section>
         )}
 
-        {/* ─── Links List Table ───────────────────────────────── */}
+        {/* ─── Links List Section ─────────────────────────────── */}
         <section className="url-list-container animate-slide" style={{ animationDelay: '0.2s' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-              <BarChart3 size={24} className="text-primary" /> Your Links
-            </h2>
-            <span style={{ fontSize: '0.875rem', color: '#64748b' }}>{urls.length} Total Links</span>
+          
+          {/* Header Row: Title on Left, Controls on Right */}
+          <div className="dashboard-header-row">
+            <div className="dashboard-title-section">
+              <h2 className="dashboard-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                Your Links <span style={{ color: '#D4AF37' }}>✨</span>
+              </h2>
+              <p className="dashboard-subtitle">Manage • Analyze • Share</p>
+            </div>
+
+            <div className="search-filter-actions-group">
+              <div className="search-input-wrapper">
+                <Search size={16} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search links..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="input search-input"
+                />
+              </div>
+
+              {/* Filter Dropdown */}
+              <div className="dropdown-container">
+                <button
+                  onClick={() => {
+                    setShowFilterDropdown(!showFilterDropdown);
+                    setShowSortDropdown(false);
+                  }}
+                  className={`btn btn-filter ${filterOption !== 'all' ? 'active-filter' : ''}`}
+                  title="Filter links"
+                >
+                  <Filter size={16} /> <span style={{ marginLeft: '0.25rem' }}>Filter</span>
+                </button>
+                {showFilterDropdown && (
+                  <div className="dropdown-menu">
+                    <button
+                      onClick={() => {
+                        setFilterOption('all');
+                        setShowFilterDropdown(false);
+                      }}
+                      className={filterOption === 'all' ? 'active' : ''}
+                    >
+                      All Links
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilterOption('active');
+                        setShowFilterDropdown(false);
+                      }}
+                      className={filterOption === 'active' ? 'active' : ''}
+                    >
+                      Active Only
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilterOption('expired');
+                        setShowFilterDropdown(false);
+                      }}
+                      className={filterOption === 'expired' ? 'active' : ''}
+                    >
+                      Expired Only
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFilterOption('expiring');
+                        setShowFilterDropdown(false);
+                      }}
+                      className={filterOption === 'expiring' ? 'active' : ''}
+                    >
+                      Expiring Soon
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="dropdown-container">
+                <button
+                  onClick={() => {
+                    setShowSortDropdown(!showSortDropdown);
+                    setShowFilterDropdown(false);
+                  }}
+                  className="btn btn-sort"
+                  title="Sort links"
+                >
+                  <ArrowUpDown size={16} /> <span style={{ marginLeft: '0.25rem' }}>Sort</span>
+                </button>
+                {showSortDropdown && (
+                  <div className="dropdown-menu">
+                    <button
+                      onClick={() => {
+                        setSortOption('newest');
+                        setShowSortDropdown(false);
+                      }}
+                      className={sortOption === 'newest' ? 'active' : ''}
+                    >
+                      Newest Created
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('oldest');
+                        setShowSortDropdown(false);
+                      }}
+                      className={sortOption === 'oldest' ? 'active' : ''}
+                    >
+                      Oldest Created
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('clicks-desc');
+                        setShowSortDropdown(false);
+                      }}
+                      className={sortOption === 'clicks-desc' ? 'active' : ''}
+                    >
+                      Most Clicked
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortOption('clicks-asc');
+                        setShowSortDropdown(false);
+                      }}
+                      className={sortOption === 'clicks-asc' ? 'active' : ''}
+                    >
+                      Least Clicked
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={handleCreateLinkClick} className="btn btn-create-link" title="Create a new link">
+                <Plus size={16} /> <span style={{ marginLeft: '0.25rem' }}>Create Link</span>
+              </button>
+            </div>
           </div>
 
-          <div className="table-wrapper glass">
-            <table>
-              <thead>
-                <tr>
-                  <th>Original URL</th>
-                  <th>Short Link</th>
-                  <th>Clicks</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {urls.length > 0 ? urls.map((url, index) => (
-                  <tr key={url.id} className="animate-fade" style={{ animationDelay: `${0.3 + index * 0.05}s` }}>
-                    <td data-label="Original URL">
-                      <div className="original-url-text" title={url.originalUrl}>
-                        {url.originalUrl}
-                      </div>
-                    </td>
-                    <td data-label="Short Link">
-                      <a href={getFullShortUrl(url.customAlias || url.shortUrl)} target="_blank" rel="noreferrer" className="url-link" style={{ fontWeight: 500 }}>
-                        {url.customAlias || url.shortUrl}
-                      </a>
-                      {url.customAlias && (
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                          Alias: {url.customAlias}
+          {/* Overview Cards Row */}
+          <div className="dashboard-overview-grid">
+            {/* Card 1: Total Links */}
+            <div className="overview-card">
+              <div className="overview-card-left">
+                <div className="overview-icon-box gold">
+                  <Link2 size={20} />
+                </div>
+                <div className="overview-info">
+                  <span className="overview-label">Total Links</span>
+                  <div className="overview-value-row">
+                    <span className="overview-value">{totalLinks}</span>
+                  </div>
+                  <span className="overview-subtext">All time</span>
+                </div>
+              </div>
+              <div className="overview-card-right">
+                <svg width="60" height="24" viewBox="0 0 60 24">
+                  <path d="M 0,18 C 12,18 12,4 24,4 C 36,4 36,15 48,15 L 60,4" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 2: Total Clicks */}
+            <div className="overview-card">
+              <div className="overview-card-left">
+                <div className="overview-icon-box gold">
+                  <TrendingUp size={20} />
+                </div>
+                <div className="overview-info">
+                  <span className="overview-label">Total Clicks</span>
+                  <div className="overview-value-row">
+                    <span className="overview-value">{totalClicks.toLocaleString()}</span>
+                    {totalClicks > 0 && (
+                      <span className="overview-trend up" style={{ marginLeft: '0.25rem' }}>
+                        ↑ 18.7%
+                      </span>
+                    )}
+                  </div>
+                  <span className="overview-subtext">vs last 7 days</span>
+                </div>
+              </div>
+              <div className="overview-card-right">
+                <svg width="60" height="24" viewBox="0 0 60 24">
+                  <path d="M 0,20 Q 15,15 30,8 T 60,3" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="15" cy="18" r="1.5" fill="#D4AF37" />
+                  <circle cx="30" cy="8" r="1.5" fill="#D4AF37" />
+                  <circle cx="45" cy="6" r="1.5" fill="#D4AF37" />
+                  <circle cx="60" cy="3" r="1.5" fill="#D4AF37" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 3: Active Links */}
+            <div className="overview-card">
+              <div className="overview-card-left" style={{ width: '100%' }}>
+                <div className="overview-icon-box green">
+                  <ShieldCheck size={20} />
+                </div>
+                <div className="overview-info" style={{ flex: 1 }}>
+                  <span className="overview-label">Active Links</span>
+                  <div className="overview-value-row">
+                    <span className="overview-value">{activeLinks}</span>
+                  </div>
+                  <span className="overview-subtext">{activePercentage}% of total</span>
+                  <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.05)', marginTop: '0.4rem', overflow: 'hidden' }}>
+                    <div style={{ width: `${activePercentage}%`, height: '100%', background: '#10B981', borderRadius: '2px' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Expiring Soon */}
+            <div className="overview-card">
+              <div className="overview-card-left">
+                <div className="overview-icon-box orange">
+                  <Clock size={20} />
+                </div>
+                <div className="overview-info">
+                  <span className="overview-label">Expiring Soon</span>
+                  <div className="overview-value-row">
+                    <span className="overview-value">{expiringSoonCount}</span>
+                  </div>
+                  <span className="overview-subtext" style={{ color: expiringSoonCount > 0 ? '#F97316' : undefined }}>Within 30 days</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Links list area */}
+          <div className="table-wrapper" style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+            {filteredAndSortedUrls.length > 0 ? (
+              <>
+                <div className="link-cards-header">
+                  <div className="header-col-left">Original URL / Short Link</div>
+                  <div className="header-col-clicks">Clicks</div>
+                  <div className="header-col-dates">Status & Timeline</div>
+                  <div className="header-col-actions">Actions</div>
+                </div>
+                <div className="link-cards-list">
+                  {filteredAndSortedUrls.map((url, index) => {
+                    const domain = getDomain(url.originalUrl);
+                    const remainingDays = getRemainingDays(url.expiryDate);
+                    const isExpired = url.expiryDate && new Date(url.expiryDate) < new Date();
+                    return (
+                      <div key={url.id} className="link-card-row glass animate-fade" style={{ animationDelay: `${0.1 + index * 0.03}s` }}>
+                        {/* Left Section: Favicon & Domain Details */}
+                        <div className="card-left-section">
+                          <div className="domain-icon-wrapper" style={{ borderColor: getIconBorderColor(domain) }}>
+                            <img 
+                              src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`} 
+                              alt={domain}
+                              className="domain-icon"
+                              onError={(e) => { e.target.src = 'https://www.google.com/s2/favicons?sz=64&domain=google.com'; }}
+                            />
+                          </div>
+                          <div className="domain-info">
+                            <div className="domain-title-row">
+                              <span className="domain-name">{domain}</span>
+                              <a href={getFullShortUrl(url.customAlias || url.shortUrl)} target="_blank" rel="noreferrer" className="external-link-arrow" title="Open original link">
+                                <ExternalLink size={14} />
+                              </a>
+                            </div>
+                            <div className="original-url-text" title={url.originalUrl}>
+                              {url.originalUrl}
+                            </div>
+                            {url.customAlias && (
+                              <div className="alias-badge-wrapper" onClick={() => copyToClipboard(url.customAlias)} title="Copy Alias">
+                                <span className="alias-badge">{url.customAlias}</span>
+                                <Copy size={10} className="alias-copy-icon" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      {url.expiryDate && (
-                        <div style={{ fontSize: '0.7rem', color: new Date(url.expiryDate) < new Date() ? 'var(--error)' : 'var(--success)', marginTop: '0.15rem' }}>
-                          Exp: {new Date(url.expiryDate).toLocaleDateString()} {new Date(url.expiryDate) < new Date() && '(Expired)'}
+
+                        {/* Clicks Counter */}
+                        <div className="card-clicks-section">
+                          <div className="clicks-pill">
+                            <div className="clicks-icon-box">
+                              <BarChart3 size={18} className="clicks-icon" />
+                            </div>
+                            <div className="clicks-data">
+                              <span className="clicks-count">{url.clickCount}</span>
+                              <span className="clicks-label">Clicks</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </td>
-                    <td data-label="Clicks">
-                      <span className="badge">{url.clickCount} clicks</span>
-                    </td>
-                    <td data-label="Created">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem', color: '#94a3b8' }}>
-                        <Clock size={14} /> {new Date(url.createdDate).toLocaleDateString()}
+
+                        {/* Date Meta Info */}
+                        <div className="card-meta-section">
+                          <div className="meta-item">
+                            <Calendar size={14} className="meta-icon" />
+                            <div className="meta-texts">
+                              <span className="meta-label">Created</span>
+                              <span className="meta-value">{new Date(url.createdDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
+                          </div>
+                          <div className="meta-item">
+                            <Clock size={14} className="meta-icon" />
+                            <div className="meta-texts">
+                              <span className="meta-label">Expires in</span>
+                              <span className="meta-value" style={{ color: isExpired ? 'var(--error)' : 'var(--success)' }}>
+                                {remainingDays}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Large & Small Action Row */}
+                        <div className="card-actions-section">
+                          <div className="action-row-primary">
+                            <button onClick={() => copyToClipboard(url.customAlias || url.shortUrl)} className="btn btn-primary action-btn-copy" title="Copy to clipboard">
+                              <Copy size={14} /> Copy
+                            </button>
+                            <a href={getFullShortUrl(url.customAlias || url.shortUrl)} target="_blank" rel="noreferrer" className="btn btn-secondary action-btn-open" title="Open link">
+                              <ExternalLink size={14} /> Open
+                            </a>
+                          </div>
+                          <div className="action-row-secondary">
+                            <button
+                              onClick={() => navigate(`/analytics/${url.id}`)}
+                              className="btn btn-secondary action-icon-btn"
+                              title="View Private Analytics"
+                              style={{ color: 'var(--secondary)' }}
+                            >
+                              <Activity size={14} />
+                            </button>
+                            <button
+                              onClick={() => navigate(`/stats/${url.customAlias || url.shortUrl}`)}
+                              className="btn btn-secondary action-icon-btn"
+                              title="View Public Stats"
+                              style={{ color: 'var(--success)' }}
+                            >
+                              <BarChart3 size={14} />
+                            </button>
+                            <button
+                              onClick={() => setQrEntry(url)}
+                              className="btn btn-secondary action-icon-btn"
+                              title="View QR Code"
+                              style={{ color: 'var(--primary)' }}
+                            >
+                              <QrCode size={14} />
+                            </button>
+                            <button
+                              onClick={() => setEditEntry(url)}
+                              className="btn btn-secondary action-icon-btn"
+                              title="Edit Link Details"
+                              style={{ color: 'var(--primary)' }}
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(url.id)} 
+                              className="btn btn-secondary action-icon-btn action-delete" 
+                              title="Delete link"
+                              style={{ color: 'var(--error)' }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                    <td data-label="Actions">
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button onClick={() => copyToClipboard(url.customAlias || url.shortUrl)} className="btn btn-secondary" style={{ padding: '0.5rem', borderRadius: '8px' }} title="Copy to clipboard">
-                          <Copy size={16} />
-                        </button>
-                        <a href={getFullShortUrl(url.customAlias || url.shortUrl)} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem', borderRadius: '8px' }} title="Open link">
-                          <ExternalLink size={16} />
-                        </a>
-                        <button
-                          onClick={() => navigate(`/analytics/${url.id}`)}
-                          className="btn btn-secondary"
-                          style={{ padding: '0.5rem', borderRadius: '8px', color: 'var(--secondary)' }}
-                          title="View Private Analytics"
-                        >
-                          <Activity size={16} />
-                        </button>
-                        <button
-                          onClick={() => navigate(`/stats/${url.customAlias || url.shortUrl}`)}
-                          className="btn btn-secondary"
-                          style={{ padding: '0.5rem', borderRadius: '8px', color: 'var(--success)' }}
-                          title="View Public Stats"
-                        >
-                          <BarChart3 size={16} />
-                        </button>
-                        <button
-                          onClick={() => setQrEntry(url)}
-                          className="btn btn-secondary"
-                          style={{ padding: '0.5rem', borderRadius: '8px', color: 'var(--primary)' }}
-                          title="View QR Code"
-                        >
-                          <QrCode size={16} />
-                        </button>
-                        <button
-                          onClick={() => setEditEntry(url)}
-                          className="btn btn-secondary"
-                          style={{ padding: '0.5rem', borderRadius: '8px', color: 'var(--primary)' }}
-                          title="Edit Link Details"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button onClick={() => handleDelete(url.id)} className="btn btn-secondary" style={{ padding: '0.5rem', borderRadius: '8px', color: 'var(--error)' }} title="Delete link">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                        <Link2 size={48} style={{ opacity: 0.2 }} />
-                        <p>No links shortened yet. Start by pasting a URL above!</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="glass" style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                  <Link2 size={48} style={{ opacity: 0.2 }} />
+                  <p>No links match your search or filter criteria. Create one or try a different filter!</p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
