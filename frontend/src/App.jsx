@@ -6,6 +6,7 @@ import { LoginPage, RegisterPage } from './AuthPages';
 import { Dashboard } from './Dashboard';
 import { UrlAnalytics } from './UrlAnalytics';
 import { PublicStats } from './PublicStats';
+import { ChatWidget } from './ChatWidget';
 import './index.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -20,7 +21,12 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   if (!user) return <Navigate to="/login" />;
-  return children;
+  return (
+    <>
+      {children}
+      <ChatWidget />
+    </>
+  );
 };
 
 function App() {

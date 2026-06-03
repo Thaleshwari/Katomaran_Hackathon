@@ -309,6 +309,7 @@ export const Dashboard = () => {
   const [parsedRows, setParsedRows] = useState([]);
   const [bulkError, setBulkError] = useState(null);
   const [bulkSuccessSummary, setBulkSuccessSummary] = useState(null);
+  const [csvFileName, setCsvFileName] = useState('');
 
   const [urls, setUrls] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -392,6 +393,7 @@ export const Dashboard = () => {
 
   const handleCsvChange = (text) => {
     setCsvText(text);
+    if (!text) setCsvFileName('');
     try {
       const parsed = parseCSV(text);
       setParsedRows(parsed);
@@ -404,6 +406,7 @@ export const Dashboard = () => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setCsvFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
       handleCsvChange(event.target.result);
@@ -431,6 +434,7 @@ export const Dashboard = () => {
 
       setBulkSuccessSummary({ results, errors });
       setCsvText('');
+      setCsvFileName('');
       setParsedRows([]);
       fetchUrls();
     } catch (err) {
@@ -647,14 +651,22 @@ export const Dashboard = () => {
                   />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', textAlign: 'left' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>OR upload CSV file:</span>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileUpload}
-                    style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}
-                  />
+                  <label className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}>
+                    <Upload size={16} /> Choose CSV File
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  {csvFileName && (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 500 }}>
+                      Selected: {csvFileName}
+                    </span>
+                  )}
                 </div>
 
                 {parsedRows.length > 0 && (
@@ -664,7 +676,7 @@ export const Dashboard = () => {
                       {parsedRows.map((r, i) => (
                         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed var(--glass-border)', paddingBottom: '0.25rem' }}>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{r.originalUrl}</span>
-                          <span style={{ color: 'var(--primary)' }}>{r.customAlias || '(no alias)'}</span>
+                          <span style={{ color: 'var(--primary)' }}>{r.customAlias || '(will generate short URL)'}</span>
                         </div>
                       ))}
                     </div>
@@ -684,6 +696,21 @@ export const Dashboard = () => {
                   <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', color: 'var(--success)' }}>
                     ✓ {bulkSuccessSummary.results.length} URLs shortened successfully.
                   </p>
+
+                  {bulkSuccessSummary.results.length > 0 && (
+                    <div style={{ margin: '0.75rem 0', background: 'rgba(0,0,0,0.15)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                      <p style={{ fontSize: '0.8rem', fontWeight: 600, margin: '0 0 0.5rem 0', color: 'var(--text-muted)' }}>Generated Short URLs:</p>
+                      <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {bulkSuccessSummary.results.map((r, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed rgba(255,255,255,0.03)', paddingBottom: '0.2rem', fontSize: '0.75rem', gap: '1rem' }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%', color: 'var(--text-muted)' }}>{r.originalUrl}</span>
+                            <span style={{ color: 'var(--primary)', fontWeight: 500 }}>/{r.customAlias || r.shortUrl}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {bulkSuccessSummary.errors.length > 0 && (
                     <div>
                       <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: 'var(--error)' }}>
@@ -968,9 +995,14 @@ export const Dashboard = () => {
                             <div className="original-url-text" title={url.originalUrl}>
                               {url.originalUrl}
                             </div>
-                            {url.customAlias && (
+                            {url.customAlias ? (
                               <div className="alias-badge-wrapper" onClick={() => copyToClipboard(url.customAlias)} title="Copy Alias">
                                 <span className="alias-badge">{url.customAlias}</span>
+                                <Copy size={10} className="alias-copy-icon" />
+                              </div>
+                            ) : (
+                              <div className="alias-badge-wrapper" onClick={() => copyToClipboard(url.shortUrl)} title="Copy Short URL">
+                                <span className="alias-badge">{url.shortUrl}</span>
                                 <Copy size={10} className="alias-copy-icon" />
                               </div>
                             )}

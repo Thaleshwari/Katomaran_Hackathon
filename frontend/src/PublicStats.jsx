@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Calendar, BarChart3, ShieldCheck, Link2, Share2, Check, LogIn } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, BarChart3, ShieldCheck, Link2, Share2, Check, LogIn, LayoutDashboard } from 'lucide-react';
 import api from './api';
 import { ThemeToggle } from './ThemeContext';
+import { useAuth } from './AuthContext';
 
 export const PublicStats = () => {
   const { shortUrl } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -85,9 +87,15 @@ export const PublicStats = () => {
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <ThemeToggle />
-          <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/login')} title="Login / Signup">
-            <LogIn size={16} /> <span className="login-btn-text">Login / Signup</span>
-          </button>
+          {user ? (
+            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/')} title="Go to Dashboard">
+              <LayoutDashboard size={16} /> <span className="login-btn-text">Dashboard</span>
+            </button>
+          ) : (
+            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/login')} title="Login / Signup">
+              <LogIn size={16} /> <span className="login-btn-text">Login / Signup</span>
+            </button>
+          )}
         </div>
       </nav>
 

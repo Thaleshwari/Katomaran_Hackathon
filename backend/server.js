@@ -10,6 +10,7 @@ require('./models');
 const authRoutes = require('./routes/authRoutes');
 const urlRoutes = require('./routes/urlRoutes');
 const redirectRoutes = require('./routes/redirectRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
 // Register Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/urls', urlRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/s', redirectRoutes); // Short URL redirect endpoint (/s/:shortUrl)
 
 // Error handling middleware
