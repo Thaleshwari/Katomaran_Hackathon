@@ -218,14 +218,12 @@ export const UrlAnalytics = () => {
                   className="analytics-url-original" 
                   title={url.originalUrl}
                   style={{
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    wordBreak: 'break-all',
                     maxWidth: '100%',
                     display: 'block'
                   }}
                 >
-                  {url.originalUrl}
+                  {url.originalUrl.length > 50 ? url.originalUrl.substring(0, 50) + '...' : url.originalUrl}
                 </p>
 
                 <div className="analytics-url-divider" />
