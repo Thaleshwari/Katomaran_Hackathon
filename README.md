@@ -120,7 +120,7 @@ graph TD
 ```
 
 ## Explanatory Video
-https://www.youtube.com/watch?v=jURtCs86WGQ
+[[https://www.youtube.com/watch?v=jURtCs86WGQ](https://www.youtube.com/watch?v=Z1jeCeoYf-M)](https://youtu.be/Z1jeCeoYf-M)
 
 # 📸 Project Screenshots
 
@@ -147,5 +147,12 @@ https://www.youtube.com/watch?v=jURtCs86WGQ
 
 ## 🌍 Public Stats
 ![Public Stats](./Outputs/Public%20stats.png)
+
+## 🖥️ Logs
+![Logs](./Outputs/logs.png)
+
+## 🗄️ Database Entries
+![DB Entries](./Outputs/DB%20Entries.png)
+
 ---
 This project is a part of a hackathon run by https://katomaran.com
