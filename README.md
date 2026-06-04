@@ -1,4 +1,4 @@
-# Shortify - Premium URL Management Platform
+# Shortify - Smart URL Management Platform with AI Assistant
 
 Shortify is a luxury, full-featured URL shortener built for modern creators, marketers, and developers. It transforms long URLs into branded links while providing deep analytics, QR code generation, bulk shortening, and an integrated AI Assistant.
 
