@@ -122,5 +122,30 @@ graph TD
 ## Explanatory Video
 https://www.youtube.com/watch?v=jURtCs86WGQ
 
+# 📸 Project Screenshots
+
+## 🏠 Home Page
+![HomePage](./Outputs/HomePage.png)
+
+## 📊 Dashboard
+![Dashboard](./Outputs/DashBoard.png)
+
+## 🔗 Link Shortening
+![Link Shortening](./Outputs/Link%20Shortening.png)
+
+## 📱 QR Code Generation
+![QR Code](./Outputs/QR%20code%20generation.png)
+
+## 📈 Analytics Page
+![Analytics Page](./Outputs/Analytics%20Page.png)
+
+## 📉 Analytics Graph
+![Analytics Graph](./Outputs/Analytics%20Graph.png)
+
+## ✏️ URL Edit
+![URL Edit](./Outputs/URL%20Edit.png)
+
+## 🌍 Public Stats
+![Public Stats](./Outputs/Public%20stats.png)
 ---
 This project is a part of a hackathon run by https://katomaran.com
