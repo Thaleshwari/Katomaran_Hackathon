@@ -120,7 +120,7 @@ graph TD
 ```
 
 ## Explanatory Video
-https://youtu.be/Ko0psgTrjkg
+https://youtu.be/xKCdChevG5U
 
 ---
 This project is a part of a hackathon run by https://katomaran.com
