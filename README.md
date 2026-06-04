@@ -120,7 +120,7 @@ graph TD
 ```
 
 ## Explanatory Video
-[Insert Loom or YouTube video link here explaining and demonstrating the application]
+https://www.youtube.com/watch?v=jURtCs86WGQ
 
 ---
 This project is a part of a hackathon run by https://katomaran.com
