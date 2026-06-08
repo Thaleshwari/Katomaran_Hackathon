@@ -154,5 +154,8 @@ graph TD
 ## 🗄️ Database Entries
 ![DB Entries](./Outputs/DB%20Entries.png)
 
+## Deployment link
+https://katomaran-hackathon.vercel.app/
+
 ---
 This project is a part of a hackathon run by https://katomaran.com
